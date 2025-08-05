@@ -23,8 +23,21 @@ type Cluster struct {
 	// If not provided, the default image is used
 	KindImage string
 
+	// Kind configuration file
+	// +private
+	Config *dagger.File
+
 	// +private
 	Kind *Kind
+}
+
+// WithConfig sets the kind configuration file for the cluster.
+func (c *Cluster) WithConfig(
+	// The configuration file.
+	configFile *dagger.File,
+) *Cluster {
+	c.Config = configFile
+	return c
 }
 
 // Check if the cluster exists or not
@@ -66,9 +79,16 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 	}
 
 	cmd := []string{"kind", "create", "cluster"}
+	container := c.Container()
+	configPath := "/kind-config.yaml"
 
 	if c.KindImage != "" {
 		cmd = append(cmd, "--image", c.KindImage)
+	}
+
+	if c.Config != nil {
+		cmd = append(cmd, "--config", configPath)
+		container = container.WithMountedFile(configPath, c.Config)
 	}
 
 	_, err = exec(ctx, c.Container(), c.Network, cmd...)
