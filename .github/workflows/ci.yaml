@@ -12,20 +12,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Test Docker CLI
-        uses: dagger/dagger-for-github@e47aba410ef9bb9ed81a4d2a97df31061e5e842e # v8.0.0
-        with:
-          call: run
-          workdir: docker/tests
+      - name: Install Dagger
+        run: |
+          # Fallback to /usr/local for backwards compatability
+          prefix_dir="${RUNNER_TEMP:-/usr/local}"
+          # Ensure the dir is writable otherwise fallback to tmpdir
+          if [[ ! -d "$prefix_dir" ]] || [[ ! -w "$prefix_dir" ]]; then
+              prefix_dir="$(mktemp -d)"
+          fi
+          printf '%s/bin' "$prefix_dir" >> $GITHUB_PATH
 
-  kind:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Test Docker CLI
-        uses: dagger/dagger-for-github@e47aba410ef9bb9ed81a4d2a97df31061e5e842e # v8.0.0
-        with:
-          call: --socket=/var/run/docker.sock cluster create
-          workdir: kind
-      
+          # If the dagger version is 'latest', set the version back to an empty
+          # string. This allows the install script to detect and install the latest
+          # version itself
+          # VERSION="0.18.14"
+          # if [[ "$VERSION" == "latest" ]]; then
+          #   VERSION=
+          # fi
+
+          # The install.sh script creates path ${prefix_dir}/bin
+          curl -fsS https://dl.dagger.io/dagger/install.sh \
+          | BIN_DIR=${prefix_dir}/bin DAGGER_VERSION="$VERSION" sh
+
+      - name: Run Tests
+        run: make test
