@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"dagger/tests/internal/dagger"
 )
@@ -17,7 +18,14 @@ func (m *Tests) Run(ctx context.Context, socket *dagger.Socket) error {
 	if err != nil {
 		return err
 	}
-	// defer cluster.Delete(ctx)
+	defer cluster.Delete(ctx)
+
+	if exists, err := cluster.Exist(ctx); !exists || err != nil {
+		if err != nil {
+			return fmt.Errorf("checking if cluster exists: %w", err)
+		}
+		return fmt.Errorf("cluster does not exist")
+	}
 
 	return nil
 }
