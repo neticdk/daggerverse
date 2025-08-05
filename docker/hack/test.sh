@@ -4,7 +4,7 @@ set -eu
 
 dagger develop
 
-pushd tests
+pushd ../tests
 dagger develop
-dagger call run --socket=/var/run/docker.sock
+dagger call run
 popd
