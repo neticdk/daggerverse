@@ -3,34 +3,38 @@
 set -eu
 
 test() {
-    find ./ -type f -name "test.sh" -print0 | while IFS= read -r -d '' test_script; do
+    for dir in $(ls ./modules); do
         (
-            dir=$(dirname "$test_script")
+            if [ ! -f "./modules/$dir/hack/test.sh" ]; then
+                echo "Missing test script for $dir"
+                return 1
+            fi
             echo "--> Running test in $dir"
-            cd "$dir" && bash ./"$(basename "$test_script")"
+            cd "./modules/$dir/hack" && bash test.sh
         )
     done
 }
 
 dagger_version() {
     local version="0.0.0"
-    while IFS= read -r -d '' test_script; do
-        local dir
-        dir=$(dirname "$test_script")
-        if [ -f "$dir/dagger.json" ]; then
-            v=$(yq '.engineVersion' "$dir/dagger.json" | sed 's/"//g' | sed 's/v//')
-            if [[ -z "$v" || "$v" == "null" ]]; then
-                continue
-            fi
-            set +e
-            vercomp "$version" "$v"
-            ret=$?
-            set -e
-            if [ $ret -eq 2 ]; then
-                version="$v"
-            fi
+    for dir in $(ls ./modules); do
+        dagger_file="./modules/$dir/dagger.json"
+        if [ ! -f "$dagger_file" ]; then
+            echo "No dagger.json file in module $dir"
+            return 1
         fi
-    done < <(find ./ -type f -name "test.sh" -print0)
+        v=$(yq '.engineVersion' "$dagger_file" | sed 's/"//g' | sed 's/v//')
+        if [[ -z "$v" || "$v" == "null" ]]; then
+            continue
+        fi
+        set +e
+        vercomp "$version" "$v"
+        ret=$?
+        set -e
+        if [ $ret -eq 2 ]; then
+            version="$v"
+        fi
+    done
     echo "$version"
 }
 
