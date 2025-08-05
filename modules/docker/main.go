@@ -52,16 +52,17 @@ func (e *Docker) Engine(
 	}
 
 	return ctr.
-		WithExec(
-			[]string{
-				"dockerd",
-				"--host=tcp://0.0.0.0:2375",
-				"--host=unix:///var/run/docker.sock",
-				"--tls=false",
+		AsService(
+			dagger.ContainerAsServiceOpts{
+				Args: []string{
+					"dockerd",
+					"--host=tcp://0.0.0.0:2375",
+					"--host=unix:///var/run/docker.sock",
+					"--tls=false",
+				},
+				InsecureRootCapabilities: true,
 			},
-			dagger.ContainerWithExecOpts{InsecureRootCapabilities: true},
-		).
-		AsService()
+		)
 }
 
 // A Docker CLI ready to query this engine.
