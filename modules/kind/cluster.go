@@ -23,6 +23,9 @@ type Cluster struct {
 	// If not provided, the default image is used
 	KindImage string
 
+	// If true, the default CNI is not used. This is useful for running kind clusters with a different CNI.
+	DisableDefaultCni bool
+
 	// +private
 	Kind *Kind
 }
@@ -65,13 +68,26 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 		return fmt.Sprintf("cluster %s already exists", c.Name), nil
 	}
 
+	container := c.Container()
 	cmd := []string{"kind", "create", "cluster"}
+
+	if c.DisableDefaultCni {
+		kindConfig := `kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+`
+		configPath := "/tmp/kind-config.yaml"
+
+		container = container.WithNewFile(configPath, kindConfig)
+		cmd = append(cmd, "--config", configPath)
+	}
 
 	if c.KindImage != "" {
 		cmd = append(cmd, "--image", c.KindImage)
 	}
 
-	_, err = exec(ctx, c.Container(), c.Network, cmd...)
+	_, err = exec(ctx, container, c.Network, cmd...)
 	if err != nil {
 		return "", err
 	}
