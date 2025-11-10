@@ -5,7 +5,7 @@ go 1.24.4
 require (
 	github.com/99designs/gqlgen v0.17.81
 	github.com/Khan/genqlient v0.8.1
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 )
 
 require (
@@ -33,7 +33,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.14.0
 	go.opentelemetry.io/otel/sdk/metric v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
-	go.opentelemetry.io/proto/otlp v1.8.0
+	go.opentelemetry.io/proto/otlp v1.9.0
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
