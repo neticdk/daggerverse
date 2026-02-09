@@ -2,7 +2,7 @@ module dagger/kind
 
 go 1.25.5
 
-toolchain go1.25.6
+toolchain go1.25.7
 
 require (
 	github.com/99designs/gqlgen v0.17.86
