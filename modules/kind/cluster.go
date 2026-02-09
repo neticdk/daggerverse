@@ -5,7 +5,6 @@ import (
 	"context"
 	"dagger/kind/internal/dagger"
 	_ "embed"
-	"errors"
 	"fmt"
 	"html/template"
 	"path/filepath"
@@ -92,10 +91,6 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 
 	container = container.WithNewFile(configPath, kindConfig)
 	cmd = append(cmd, "--config", configPath)
-
-	if true {
-		return "", errors.New(kindConfig)
-	}
 
 	if c.KindImage != "" {
 		cmd = append(cmd, "--image", c.KindImage)
