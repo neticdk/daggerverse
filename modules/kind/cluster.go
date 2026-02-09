@@ -1,15 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"dagger/kind/internal/dagger"
+	_ "embed"
+	"errors"
 	"fmt"
+	"html/template"
 	"path/filepath"
 	"strings"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/samber/lo"
-
-	"dagger/kind/internal/dagger"
 )
+
+//go:embed config.yaml
+var config string
 
 // Represents a kind cluster
 type Cluster struct {
@@ -25,6 +32,9 @@ type Cluster struct {
 
 	// If true, the default CNI is not used. This is useful for running kind clusters with a different CNI.
 	DisableDefaultCni bool
+
+	// Number of worker nodes.
+	WorkerNodes int
 
 	// +private
 	Kind *Kind
@@ -71,16 +81,20 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 	container := c.Container()
 	cmd := []string{"kind", "create", "cluster"}
 
-	if c.DisableDefaultCni {
-		kindConfig := `kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-`
-		configPath := "/tmp/kind-config.yaml"
+	values := map[string]any{
+		"Workers":           c.WorkerNodes,
+		"DisableDefaultCni": c.DisableDefaultCni,
+	}
 
-		container = container.WithNewFile(configPath, kindConfig)
-		cmd = append(cmd, "--config", configPath)
+	kindConfig, err := templateConfig(values)
+
+	configPath := "/tmp/kind-config.yaml"
+
+	container = container.WithNewFile(configPath, kindConfig)
+	cmd = append(cmd, "--config", configPath)
+
+	if true {
+		return "", errors.New(kindConfig)
 	}
 
 	if c.KindImage != "" {
@@ -178,4 +192,17 @@ func (c *Cluster) Container() *dagger.Container {
 		Container().
 		WithEnvVariable("KIND_CLUSTER_NAME", c.Name).
 		WithEnvVariable("KIND_EXPERIMENTAL_DOCKER_NETWORK", c.Network)
+}
+
+func templateConfig(values map[string]any) (string, error) {
+	tmpl, err := template.New("config.yaml").Funcs(sprig.TxtFuncMap()).Parse(config)
+	if err != nil {
+		return "", fmt.Errorf("parsing config template: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, values); err != nil {
+		return "", fmt.Errorf("executing config template: %w", err)
+	}
+
+	return buf.String(), nil
 }

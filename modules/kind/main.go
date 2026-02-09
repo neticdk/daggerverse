@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-
 	"dagger/kind/internal/dagger"
 )
 
@@ -61,6 +60,12 @@ func (k *Kind) Cluster(
 	// +optional
 	// +default=false
 	disableDefaultCni bool,
+
+	// Number of worker nodes for the Kind cluster.
+	//
+	// +optional
+	// +default=0
+	workerNodes int,
 ) (*Cluster, error) {
 	// Get the network name for the engine containers to ensure the cluster is created on the same network. It's
 	// important to use the same network to be able to access the cluster from other containers using the IP address of
@@ -76,5 +81,6 @@ func (k *Kind) Cluster(
 		Kind:              k,
 		KindImage:         k.KindImage,
 		DisableDefaultCni: disableDefaultCni,
+		WorkerNodes:       0,
 	}, nil
 }
