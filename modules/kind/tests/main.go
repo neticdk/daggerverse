@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
-
 	"dagger/tests/internal/dagger"
+	"fmt"
 )
 
 type Tests struct{}
 
 func (m *Tests) Run(ctx context.Context, socket *dagger.Socket) error {
 	cluster := dag.Kind(socket).Cluster(dagger.KindClusterOpts{
-		Name: "test",
+		Name:        "test",
+		WorkerNodes: 2,
 	})
 
 	_, err := cluster.Create(ctx)

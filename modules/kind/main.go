@@ -81,6 +81,6 @@ func (k *Kind) Cluster(
 		Kind:              k,
 		KindImage:         k.KindImage,
 		DisableDefaultCni: disableDefaultCni,
-		WorkerNodes:       0,
+		WorkerNodes:       workerNodes,
 	}, nil
 }
