@@ -105,7 +105,7 @@ type CLI struct {
 
 // Package the Docker CLI into a container, wired to an engine
 func (c *CLI) Container() *dagger.Container {
-	ctr := dag.Container().From("index.docker.io/docker:cli")
+	ctr := dag.Container().From("index.docker.io/docker:cli").WithEnvVariable("CONTAINER_HOST", "unix:///var/run/docker.sock")
 
 	// disable the entrypoint
 	ctr = ctr.WithoutEntrypoint()
@@ -136,7 +136,7 @@ func (c *CLI) Run(
 	// +default=true
 	invalidateCache bool,
 ) (string, error) {
-	ctr := c.Container()
+	ctr := c.Container().WithEnvVariable("CONTAINER_HOST", "unix:///var/run/docker.sock")
 	if invalidateCache {
 		ctr = ctr.WithEnvVariable("CACHE_BUSTER", time.Now().Format(time.RFC3339Nano))
 	}

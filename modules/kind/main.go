@@ -4,9 +4,10 @@ package main
 import (
 	"context"
 	"dagger/kind/internal/dagger"
+	"fmt"
 )
 
-const defaultImage = "alpine/k8s:1.32.1"
+const defaultImage = "alpine/k8s:1.35.0"
 
 func New(
 	// Unix socket to connect to the external Docker Engine. Please carefully use this option it can expose your host to the container.
@@ -35,13 +36,41 @@ type Kind struct {
 
 // Container that contains the kind and k9s binaries
 func (k *Kind) Container() *dagger.Container {
+	// Define the shim script content
+	shim := `#!/bin/bash
+args=("$@")
+
+if [[ "${args[0]}" == "exec" ]]; then
+    # Always use docker for exec to ensure pipe reliability
+    cmd="/usr/bin/docker"
+    new_args=()
+
+    for arg in "${args[@]}"; do
+        if [[ "$arg" == "kubeadm" ]]; then
+            new_args+=("/usr/bin/setsid" "-w" "kubeadm")
+        else
+            new_args+=("$arg")
+        fi
+    done
+
+    exec "$cmd" "${new_args[@]}"
+else
+    # Passthrough non-exec commands (run, inspect, network) to podman
+    # Kind checks provider availability/version using these
+    exec /usr/bin/podman.real "$@"
+fi
+`
+
 	return dag.Container().
 		From(k.ContainerImage).
 		WithoutEntrypoint().
 		WithUser("root").
 		WithWorkdir("/").
-		WithExec([]string{"apk", "add", "--no-cache", "docker", "kind", "k9s"}).
+		WithExec([]string{"apk", "add", "--no-cache", "podman", "kind", "k9s", "bash", "docker", "util-linux"}).
+		WithExec([]string{"mv", "/usr/bin/podman", "/usr/bin/podman.real"}).
+		WithNewFile("/usr/bin/podman", shim, dagger.ContainerWithNewFileOpts{Permissions: 0755}).
 		WithUnixSocket("/var/run/docker.sock", k.DockerSocket).
+		WithEnvVariable("CONTAINER_HOST", "unix:///var/run/docker.sock").
 		WithEnvVariable("DOCKER_HOST", "unix:///var/run/docker.sock")
 }
 
@@ -67,17 +96,15 @@ func (k *Kind) Cluster(
 	// +default=0
 	workerNodes int,
 ) (*Cluster, error) {
-	// Get the network name for the engine containers to ensure the cluster is created on the same network. It's
-	// important to use the same network to be able to access the cluster from other containers using the IP address of
-	// the cluster.
-	network, err := getContainerNetwork(ctx, k.DockerSocket, "^dagger-engine-.*")
-	if err != nil {
-		return nil, err
+	targetNetwork := "kind"
+
+	if err := connectEngineToNetwork(ctx, k.DockerSocket, targetNetwork); err != nil {
+		return nil, fmt.Errorf("failed to multi-home dagger engine: %w", err)
 	}
 
 	return &Cluster{
 		Name:              name,
-		Network:           network,
+		Network:           targetNetwork,
 		Kind:              k,
 		KindImage:         k.KindImage,
 		DisableDefaultCni: disableDefaultCni,

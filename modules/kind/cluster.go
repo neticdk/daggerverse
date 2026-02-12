@@ -186,7 +186,9 @@ func (c *Cluster) Container() *dagger.Container {
 	return c.Kind.
 		Container().
 		WithEnvVariable("KIND_CLUSTER_NAME", c.Name).
-		WithEnvVariable("KIND_EXPERIMENTAL_DOCKER_NETWORK", c.Network)
+		WithEnvVariable("KIND_EXPERIMENTAL_DOCKER_NETWORK", c.Network).
+		WithEnvVariable("KIND_EXPERIMENTAL_PROVIDER", "podman").
+		WithEnvVariable("CONTAINER_HOST", "unix:///var/run/docker.sock")
 }
 
 func templateConfig(values map[string]any) (string, error) {
