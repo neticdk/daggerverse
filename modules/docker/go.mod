@@ -3,7 +3,7 @@ module docker
 go 1.25.5
 
 require (
-	github.com/99designs/gqlgen v0.17.88
+	github.com/99designs/gqlgen v0.17.89
 	github.com/Khan/genqlient v0.8.1
 	golang.org/x/sync v0.19.0
 )
