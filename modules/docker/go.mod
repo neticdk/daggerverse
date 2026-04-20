@@ -3,7 +3,7 @@ module docker
 go 1.25.5
 
 require (
-	dagger.io/dagger v0.20.6-0.20260415192040-7058e9313c72
+	dagger.io/dagger v0.20.6
 	github.com/Khan/genqlient v0.8.1
 	github.com/dagger/otel-go v1.43.0
 )
