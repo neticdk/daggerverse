@@ -29,8 +29,8 @@ type Cluster struct {
 	// If true, the default CNI is not used. This is useful for running kind clusters with a different CNI.
 	DisableDefaultCni bool
 
-	// Overwrite KubeConfig. Takes precedence over all optional arguments
-	KubeConfig string
+	// Overwrite KindConfig. Takes precedence over all optional arguments
+	KindConfig string
 
 	// +private
 	Kind *Kind
@@ -79,7 +79,7 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 
 	kindConfig, err := c.createConfig()
 	if err != nil {
-		return "", fmt.Errorf("creating kube-config: %w", err)
+		return "", fmt.Errorf("creating kind-config: %w", err)
 	}
 
 	configPath := "/tmp/kind-config.yaml"
@@ -184,14 +184,14 @@ func (c *Cluster) Container() *dagger.Container {
 		WithEnvVariable("KIND_EXPERIMENTAL_DOCKER_NETWORK", c.Network)
 }
 
-//go:embed templates/kubeconfig.yaml
+//go:embed templates/kindconfig.yaml
 var configTemplate string
 
-var configTmpl = template.Must(template.New("kubeconfig").Parse(configTemplate))
+var configTmpl = template.Must(template.New("kindconfig").Parse(configTemplate))
 
 func (c *Cluster) createConfig() (string, error) {
-	if c.KubeConfig != "" {
-		return c.KubeConfig, nil
+	if c.KindConfig != "" {
+		return c.KindConfig, nil
 	}
 
 	values := map[string]any{

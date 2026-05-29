@@ -62,11 +62,11 @@ func (k *Kind) Cluster(
 	// +default=false
 	disableDefaultCni bool,
 
-	// Overwrite kubeconfig to use instead of the generated one
+	// Overwrite kind config to use instead of the generated one
 	//
 	// +optional
 	// +default=""
-	config string,
+	kindConfig string,
 ) (*Cluster, error) {
 	// Get the network name for the engine containers to ensure the cluster is created on the same network. It's
 	// important to use the same network to be able to access the cluster from other containers using the IP address of
@@ -82,6 +82,6 @@ func (k *Kind) Cluster(
 		Kind:              k,
 		KindImage:         k.KindImage,
 		DisableDefaultCni: disableDefaultCni,
-		KubeConfig:        config,
+		KindConfig:        kindConfig,
 	}, nil
 }

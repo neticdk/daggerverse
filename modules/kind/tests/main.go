@@ -14,8 +14,8 @@ func (m *Tests) Run(ctx context.Context, socket *dagger.Socket) error {
 		return fmt.Errorf("default test failed: %w", err)
 	}
 
-	if err := m.TestKubeConfig(ctx, socket); err != nil {
-		return fmt.Errorf("kubeconfig test failed: %w", err)
+	if err := m.TestKindConfig(ctx, socket); err != nil {
+		return fmt.Errorf("kindconfig test failed: %w", err)
 	}
 
 	return nil
@@ -42,7 +42,7 @@ func (m *Tests) TestDefault(ctx context.Context, socket *dagger.Socket) error {
 	return nil
 }
 
-func (m *Tests) TestKubeConfig(ctx context.Context, socket *dagger.Socket) error {
+func (m *Tests) TestKindConfig(ctx context.Context, socket *dagger.Socket) error {
 	customConfig := `kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
@@ -50,8 +50,8 @@ networking:
 `
 
 	cluster := dag.Kind(socket).Cluster(dagger.KindClusterOpts{
-		Name:   "test-kubeconfig",
-		Config: customConfig,
+		Name:       "test-kindconfig",
+		KindConfig: customConfig,
 	})
 
 	_, err := cluster.Create(ctx)
