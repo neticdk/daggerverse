@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/samber/lo"
 
@@ -25,6 +28,9 @@ type Cluster struct {
 
 	// If true, the default CNI is not used. This is useful for running kind clusters with a different CNI.
 	DisableDefaultCni bool
+
+	// Overwrite KubeConfig. Takes precedence over all optional arguments
+	KubeConfig string
 
 	// +private
 	Kind *Kind
@@ -71,17 +77,15 @@ func (c *Cluster) Create(ctx context.Context) (string, error) {
 	container := c.Container()
 	cmd := []string{"kind", "create", "cluster"}
 
-	if c.DisableDefaultCni {
-		kindConfig := `kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-`
-		configPath := "/tmp/kind-config.yaml"
-
-		container = container.WithNewFile(configPath, kindConfig)
-		cmd = append(cmd, "--config", configPath)
+	kindConfig, err := c.createConfig()
+	if err != nil {
+		return "", fmt.Errorf("creating kube-config: %w", err)
 	}
+
+	configPath := "/tmp/kind-config.yaml"
+
+	container = container.WithNewFile(configPath, kindConfig)
+	cmd = append(cmd, "--config", configPath)
 
 	if c.KindImage != "" {
 		cmd = append(cmd, "--image", c.KindImage)
@@ -178,4 +182,27 @@ func (c *Cluster) Container() *dagger.Container {
 		Container().
 		WithEnvVariable("KIND_CLUSTER_NAME", c.Name).
 		WithEnvVariable("KIND_EXPERIMENTAL_DOCKER_NETWORK", c.Network)
+}
+
+//go:embed templates/kubeconfig.yaml
+var configTemplate string
+
+var configTmpl = template.Must(template.New("kubeconfig").Parse(configTemplate))
+
+func (c *Cluster) createConfig() (string, error) {
+	if c.KubeConfig != "" {
+		return c.KubeConfig, nil
+	}
+
+	values := map[string]any{
+		"Name":              c.Name,
+		"DisableDefaultCNI": c.DisableDefaultCni,
+	}
+
+	var buf bytes.Buffer
+	if err := configTmpl.Execute(&buf, values); err != nil {
+		return "", fmt.Errorf("executing template: %w", err)
+	}
+
+	return buf.String(), nil
 }

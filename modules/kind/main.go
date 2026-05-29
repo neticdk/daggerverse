@@ -7,7 +7,7 @@ import (
 	"dagger/kind/internal/dagger"
 )
 
-const defaultImage = "alpine/k8s:1.32.1"
+const defaultImage = "alpine/k8s:1.36.1"
 
 func New(
 	// Unix socket to connect to the external Docker Engine. Please carefully use this option it can expose your host to the container.
@@ -61,6 +61,12 @@ func (k *Kind) Cluster(
 	// +optional
 	// +default=false
 	disableDefaultCni bool,
+
+	// Overwrite kubeconfig to use instead of the generated one
+	//
+	// +optional
+	// +default=""
+	config string,
 ) (*Cluster, error) {
 	// Get the network name for the engine containers to ensure the cluster is created on the same network. It's
 	// important to use the same network to be able to access the cluster from other containers using the IP address of
@@ -76,5 +82,6 @@ func (k *Kind) Cluster(
 		Kind:              k,
 		KindImage:         k.KindImage,
 		DisableDefaultCni: disableDefaultCni,
+		KubeConfig:        config,
 	}, nil
 }
