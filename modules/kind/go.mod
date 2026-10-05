@@ -7,7 +7,7 @@ require (
 	github.com/dagger/otel-go v1.43.0
 	github.com/vektah/gqlparser/v2 v2.5.33
 	go.opentelemetry.io/otel v1.44.0
-	go.opentelemetry.io/otel/sdk v1.43.0
+	go.opentelemetry.io/otel/sdk v1.45.0
 	go.opentelemetry.io/otel/trace v1.44.0
 )
 
